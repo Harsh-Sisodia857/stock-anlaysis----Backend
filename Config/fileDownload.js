@@ -1,7 +1,7 @@
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const fs = require('fs');
 
-module.exports.downloadFileFromS3 = () => {
+module.exports.downloadFileFromS3 = (Key) => {
   // Create an S3 client using v3
   const s3 = new S3Client({
     region: process.env.REGION, 
@@ -14,7 +14,7 @@ module.exports.downloadFileFromS3 = () => {
   // Define download parameters
   const downloadParams = {
     Bucket: process.env.BUCKET_NAME,
-    Key: "Stock Data Set.json",
+    Key,
   };
 
   return new Promise((resolve, reject) => {

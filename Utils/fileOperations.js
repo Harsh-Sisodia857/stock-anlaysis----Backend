@@ -1,18 +1,39 @@
-// Function to get stock by name
-function getStockByName(name) {
-  return stocks.find(
-    (stock) => stock.name.toLowerCase() === name.toLowerCase()
-  );
+const fs = require("fs");
+const path = require("path");
+
+// Utility function to get file path for cache
+const getCacheFilePath = (fileName) => path.join(__dirname, "../Cache", fileName);
+
+const readFromCache = (fileName) => {
+  const filePath = getCacheFilePath(fileName);
+  if (fs.existsSync(filePath)) {
+    return JSON.parse(fs.readFileSync(filePath, "utf-8")); // Read and parse the JSON file
+  }
+  return null; // If file doesn't exist, return null
+};
+
+const writeToCache = (data, fileName) => {
+  const filePath = getCacheFilePath(fileName);
+  const dirPath = path.dirname(filePath);
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true }); // Creating the directory if it doesn't exist
+  }
+  fs.writeFileSync(filePath, JSON.stringify(data), "utf-8"); // Write data to file
+};
+
+function getStockByField(field, stocks, value) {
+  stocks = JSON.parse(stocks)
+  // Ensure stocks is an array
+  if (!Array.isArray(stocks)) {
+    console.error('Stocks is not an array!');
+    return null;
+  }
+
+  // Find the stock by either name or ticker
+  const stock = stocks.find(stock => stock[field]?.toLowerCase() === value.toLowerCase());
+  return stock || null;  // If not found, return null
 }
 
-// Function to get stock by ticker
-function getStockByTicker(ticker) {
-  return stocks.find(
-    (stock) => stock.ticker.toLowerCase() === ticker.toLowerCase()
-  );
-}
-
-// Function to delete stock by ticker
 function deleteStockByTicker(ticker) {
   const stockIndex = stocks.findIndex(
     (stock) => stock.ticker.toLowerCase() === ticker.toLowerCase()
@@ -27,7 +48,6 @@ function deleteStockByTicker(ticker) {
   }
 }
 
-// Function to update stock by ticker
 function updateStockByTicker(ticker, updatedFields) {
   const stock = getStockByTicker(ticker);
 
@@ -43,6 +63,7 @@ function updateStockByTicker(ticker, updatedFields) {
 module.exports = {
   updateStockByTicker,
   deleteStockByTicker,
-  getStockByTicker,
-  getStockByName,
+  getStockByField,
+  readFromCache,
+  writeToCache,
 };
