@@ -2,7 +2,7 @@ const { downloadFileFromS3 } = require("../Config/fileDownload");
 const {
   writeToCache,
   readFromCache,
-  getStockByField,
+  getFileDataByField,
 } = require("../Utils/fileOperations");
 
 async function getAllStock() {
@@ -41,10 +41,10 @@ module.exports.getStockDetail = async (req, res) => {
 
     let stock = null;
     if (name) {
-      stock = getStockByField("name", fileData, name);
+      stock = getFileDataByField("name", fileData, name);
       console.log("FINAL STOCK RECEIVED : ", stock);
     } else {
-      stock = getStockByField("ticker", fileData, ticker);
+      stock = getFileDataByField("ticker", fileData, ticker);
     }
 
     if (stock) {

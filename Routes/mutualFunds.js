@@ -1,7 +1,8 @@
 const express = require("express");
-const { mutualFundDetails } = require("../Controller/mutualFundController");
+const { mutualFundDetails, getMutualFund } = require("../Controller/mutualFundController");
 const router = express.Router();
 
 router.get('/', mutualFundDetails);
+router.get('/:name',getMutualFund)
 
 module.exports = router;

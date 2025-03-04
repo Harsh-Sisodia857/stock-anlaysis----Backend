@@ -21,17 +21,17 @@ const writeToCache = (data, fileName) => {
   fs.writeFileSync(filePath, JSON.stringify(data), "utf-8"); // Write data to file
 };
 
-function getStockByField(field, stocks, value) {
-  stocks = JSON.parse(stocks)
+function getFileDataByField(field, fileData, value) {
+  fileData = JSON.parse(fileData)
   // Ensure stocks is an array
-  if (!Array.isArray(stocks)) {
+  if (!Array.isArray(fileData)) {
     console.error('Stocks is not an array!');
     return null;
   }
 
   // Find the stock by either name or ticker
-  const stock = stocks.find(stock => stock[field]?.toLowerCase() === value.toLowerCase());
-  return stock || null;  // If not found, return null
+  const data = fileData.find(stock => stock[field]?.toLowerCase() === value.toLowerCase());
+  return data || null;  // If not found, return null
 }
 
 function deleteStockByTicker(ticker) {
@@ -63,7 +63,7 @@ function updateStockByTicker(ticker, updatedFields) {
 module.exports = {
   updateStockByTicker,
   deleteStockByTicker,
-  getStockByField,
+  getFileDataByField,
   readFromCache,
   writeToCache,
 };
