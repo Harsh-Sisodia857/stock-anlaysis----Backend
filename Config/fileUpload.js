@@ -1,22 +1,25 @@
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const fs = require("fs");
 
-module.exports.uploadToS3 = () => {
-  // Create an S3 service object
-  const s3 = new AWS.S3();
+const s3Client = new S3Client({
+  region: process.env.REGION, 
+});
 
-  // Define upload parameters
-  const uploadParams = {
-    Bucket: process.env.BUCKET,
-    Key: "Stock Data Set.json",
-    Body: fs.createReadStream("Stock Data Set.csv"),
-  };
+module.exports.uploadToS3 = async () => {
+  try {
+    const fileStream = fs.createReadStream("Stock Data Set.csv");
 
-  // Upload the file
-  s3.upload(uploadParams, (err, data) => {
-    if (err) {
-      console.error("Error uploading file:", err);
-    } else {
-      console.log("File uploaded successfully:", data.Location);
-    }
-  });
+    const uploadParams = {
+      Bucket: process.env.BUCKET_NAME,
+      Key: "Stock Data Set.json",
+      Body: fileStream,
+    };
+
+    const command = new PutObjectCommand(uploadParams);
+    await s3Client.send(command);
+
+    console.log("File uploaded successfully:", uploadParams.Key);
+  } catch (error) {
+    console.error("Error uploading file:", error);
+  }
 };

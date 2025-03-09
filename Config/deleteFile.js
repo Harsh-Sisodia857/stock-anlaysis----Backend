@@ -1,19 +1,21 @@
-const AWS = require('aws-sdk');
+const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
-module.exports.deleteFileFromS3 = () => {
-  const s3 = new AWS.S3();
-  // Define delete parameters
-  const deleteParams = {
-    Bucket: process.env.BUCKET,
-    Key: "Stock Data Set.json", 
-  };
+const s3Client = new S3Client({
+  region: process.env.REGION,
+});
 
-  // Delete the file
-  s3.deleteObject(deleteParams, (err, data) => {
-    if (err) {
-      console.error("Error deleting file:", err);
-    } else {
-      console.log("File deleted successfully:", data);
-    }
-  });
+module.exports.deleteFileFromS3 = async () => {
+  try {
+    const deleteParams = {
+      Bucket: process.env.BUCKET,
+      Key: "Stock Data Set.json",
+    };
+
+    const command = new DeleteObjectCommand(deleteParams);
+    await s3Client.send(command);
+
+    console.log("File deleted successfully:", deleteParams.Key);
+  } catch (error) {
+    console.error("Error deleting file:", error);
+  }
 };

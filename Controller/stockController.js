@@ -1,21 +1,12 @@
-const { downloadFileFromS3 } = require("../Config/fileDownload");
+const { uploadToS3 } = require("../Config/fileUpload");
 const {
   writeToCache,
-  readFromCache,
   getFileDataByField,
+  updateStockByTicker,
+  getAllStock,
 } = require("../Utils/fileOperations");
 
-async function getAllStock() {
-  const stockKey = process.env.STOCK_KEY;
-  let fileData = readFromCache("stocks.json");
-  if (!fileData) {
-    console.log("FILE DOES NOT EXIST IN STORAGE");
-    // If no cache, fetch stock data from S3 and cache it
-    fileData = await downloadFileFromS3(stockKey);
-    writeToCache(fileData, "stocks.json");
-  }
-  return fileData;
-}
+
 
 module.exports.stockDetails = async (req, res) => {
   try {
@@ -66,3 +57,57 @@ module.exports.getStockDetail = async (req, res) => {
     });
   }
 };
+
+// admin controller
+
+module.exports.createStock = async (req, res) => {
+  try {
+    //  const {name,ticker,sector, subSector, closePrice, marketCap, QuickRatio, ReserveSurplus, TotalCurrent, Equity, Assets, Liability, CapEx} = req.body;
+    const stock = req.body;
+    let fileData = getAllStock();
+    fileData.push(stock);
+    writeToCache(fileData, "stocks.json");
+    deleteFileFromS3();
+    uploadToS3();
+    return res.json({
+      success: true,
+      fileData,
+    });
+  } catch (error) {
+    
+  }
+};
+
+module.exports.deleteStock = async (req,res) => {
+  try{
+    const {ticker} = req.body;
+    let updatedData = deleteStockByTicker(ticker);
+    deleteFileFromS3();
+    uploadToS3();
+    return res.json({
+      success: true,
+      updatedData,
+    });
+  }catch(error){
+    console.error("Error while Deleting stock :", error);
+    return res.json({
+      success: false,
+      message: "Failed to Delete the stock",
+    });
+  }
+}
+
+module.exports.updateStock = async(req,res) => {
+  try{
+    const stock = req.body;
+    const updatedData = updateStockByTicker(stock.ticker, stock);
+    deleteFileFromS3();
+    uploadToS3();
+    return res.json({
+      success: true,
+      updatedData,
+    });
+  }catch(error){
+
+  }
+}
