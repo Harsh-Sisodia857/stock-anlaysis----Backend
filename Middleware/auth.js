@@ -11,7 +11,9 @@ exports.authenticated = async (req,res,next)=>{
     }
     try {
         const data = jwt.verify(token, jwtSecret);
-        req.user = await User.findById(data.user.id);
+        const id = data.user.id;
+        req.user = await User.findOne({ where: { id } });
+        // req.user = await User.findById(data.user.id);
         next();
         
     } catch (error) {

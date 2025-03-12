@@ -10,8 +10,8 @@ const {
 
 module.exports.stockDetails = async (req, res) => {
   try {
-    let fileData = getAllStock();
-
+    let fileData = await getAllStock();
+    
     return res.json({
       success: true,
       stockData: fileData,
@@ -28,12 +28,11 @@ module.exports.stockDetails = async (req, res) => {
 module.exports.getStockDetail = async (req, res) => {
   try {
     const { name, ticker } = req.query;
-    let fileData = getAllStock();
+    let fileData = await getAllStock();
 
     let stock = null;
     if (name) {
       stock = getFileDataByField("name", fileData, name);
-      console.log("FINAL STOCK RECEIVED : ", stock);
     } else {
       stock = getFileDataByField("ticker", fileData, ticker);
     }
@@ -64,7 +63,7 @@ module.exports.createStock = async (req, res) => {
   try {
     //  const {name,ticker,sector, subSector, closePrice, marketCap, QuickRatio, ReserveSurplus, TotalCurrent, Equity, Assets, Liability, CapEx} = req.body;
     const stock = req.body;
-    let fileData = getAllStock();
+    let fileData = await getAllStock();
     fileData.push(stock);
     writeToCache(fileData, "stocks.json");
     deleteFileFromS3();

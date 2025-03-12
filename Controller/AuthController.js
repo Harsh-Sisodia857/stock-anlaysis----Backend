@@ -35,7 +35,7 @@ const createUser = async (req, res) => {
                 id: user.id,
             },
         };
-        const authToken = jwt.sign(data, jwtSecret, { expiresIn: '1h' }); // Added expiration for security
+        const authToken = jwt.sign(data, jwtSecret, { expiresIn: '3h' }); // Added expiration for security
         success = true;
         const userData = {
             id: user.id,
