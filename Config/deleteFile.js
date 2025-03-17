@@ -2,13 +2,17 @@ const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
 const s3Client = new S3Client({
   region: process.env.REGION,
+  credentials : {
+    accessKeyId: process.env.ACCESS_KEY,       
+    secretAccessKey: process.env.SECRET_ACCESS_KEY, 
+  } 
 });
 
-module.exports.deleteFileFromS3 = async () => {
+module.exports.deleteFileFromS3 = async (Key) => {
   try {
     const deleteParams = {
-      Bucket: process.env.BUCKET,
-      Key: "Stock Data Set.json",
+      Bucket: process.env.BUCKET_NAME,
+      Key,
     };
 
     const command = new DeleteObjectCommand(deleteParams);

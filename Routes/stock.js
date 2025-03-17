@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/all',stockDetails);
 router.get('/', getStockDetail)
 router.post('/create',[authenticated, authorizedRoles], createStock);
-router.delete('/delete',[authenticated, authorizedRoles], deleteStock);
-router.put('/update',[authenticated, authorizedRoles], updateStock);
+router.delete('/delete/:ticker',[authenticated, authorizedRoles], deleteStock);
+router.put('/update/:ticker',[authenticated, authorizedRoles], updateStock);
 
 module.exports = router;

@@ -4,6 +4,7 @@ const {
   getFileDataByField,
   updateStockByTicker,
   getAllStock,
+  deleteStockByTicker,
 } = require("../Utils/fileOperations");
 
 
@@ -64,10 +65,11 @@ module.exports.createStock = async (req, res) => {
     //  const {name,ticker,sector, subSector, closePrice, marketCap, QuickRatio, ReserveSurplus, TotalCurrent, Equity, Assets, Liability, CapEx} = req.body;
     const stock = req.body;
     let fileData = await getAllStock();
+    const stockKey = process.env.STOCK_KEY;
     fileData.push(stock);
     writeToCache(fileData, "stocks.json");
-    deleteFileFromS3();
-    uploadToS3();
+    await deleteFileFromS3(stockKey);
+    await uploadToS3(stockKey,"stocks.json");
     return res.json({
       success: true,
       fileData,
@@ -79,10 +81,11 @@ module.exports.createStock = async (req, res) => {
 
 module.exports.deleteStock = async (req,res) => {
   try{
-    const {ticker} = req.body;
-    let updatedData = deleteStockByTicker(ticker);
-    deleteFileFromS3();
-    uploadToS3();
+    const {ticker} = req.params;
+    let updatedData = await deleteStockByTicker(ticker);
+    const stockKey = process.env.STOCK_KEY;
+    await deleteFileFromS3(stockKey);
+    await uploadToS3(stockKey,"stocks.json");
     return res.json({
       success: true,
       updatedData,
@@ -98,10 +101,12 @@ module.exports.deleteStock = async (req,res) => {
 
 module.exports.updateStock = async(req,res) => {
   try{
+    const {ticker} = req.params;
     const stock = req.body;
-    const updatedData = updateStockByTicker(stock.ticker, stock);
-    deleteFileFromS3();
-    uploadToS3();
+    const updatedData = await updateStockByTicker(ticker, stock);
+    const stockKey = process.env.STOCK_KEY;
+    await deleteFileFromS3(stockKey);
+    await uploadToS3(stockKey,"stocks.json");
     return res.json({
       success: true,
       updatedData,
