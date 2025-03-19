@@ -1,6 +1,8 @@
 const { deleteFileFromS3 } = require("../Config/deleteFile");
 const { uploadToS3 } = require("../Config/fileUpload");
 const fs = require('fs');
+const path = require('path');
+const { json2csv } = require('json-2-csv');
 const {
   writeToCache,
   getFileDataByField,
@@ -128,24 +130,88 @@ module.exports.updateStock = async(req,res) => {
   }
 }
 
+
 module.exports.downloadStock = async (req, res) => {
   try {
-    const filePath = getCacheFilePath("stocks.json")
-    console.log("FILE PATH : ",filePath)
-    // Checking if file exists
-    if (!fs.existsSync(filePath)) {
+    const jsonFilePath = getCacheFilePath("stocks.json");
+    
+    if (!jsonFilePath) {
+      return res.status(500).send({ message: 'Invalid file path' });
+    }
+    
+    console.log("FILE PATH:", jsonFilePath);
+    
+    // Checking if JSON file exists
+    if (!fs.existsSync(jsonFilePath)) {
       return res.status(404).send({ message: 'Stock data file not found' });
     }
     
-    // Set appropriate headers
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', 'attachment; filename=stock.json');
+    // Read and parse JSON file
+    let jsonData = fs.readFileSync(jsonFilePath, 'utf8');
     
-    // Stream the file as the response
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
+    try {
+      jsonData = JSON.parse(jsonData);
+      if (typeof jsonData === 'string') {
+        jsonData = JSON.parse(jsonData); // Handle stringified JSON
+      }
+    } catch (error) {
+      console.error("Error parsing JSON file:", error);
+      return res.status(500).send({ message: 'Invalid JSON format in file' });
+    }
+    
+    if (!Array.isArray(jsonData) || jsonData.length === 0) {
+      return res.status(400).send({ message: 'No data found to convert to CSV' });
+    }
+    
+    // Convert JSON to CSV using json-2-csv
+    const csvContent = await json2csv(jsonData, {
+      emptyFieldValue: '',
+      keys: Object.keys(jsonData[0]), // Use keys from the first object
+      delimiter: {
+        field: ',',
+        wrap: '"',
+        eol: '\n'
+      },
+      prependHeader: true
+    });
+    
+    // Generate CSV file path
+    const csvFilePath = jsonFilePath.replace('.json', '.csv');
+    
+    // Ensure the directory exists
+    const directoryPath = path.dirname(csvFilePath);
+    if (!fs.existsSync(directoryPath)) {
+      fs.mkdirSync(directoryPath, { recursive: true });
+    }
+    
+    // Write CSV content to file
+    fs.writeFileSync(csvFilePath, csvContent, 'utf8');
+    
+    // Send the CSV file
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=stocks.csv');
+    
+    const readStream = fs.createReadStream(csvFilePath);
+    readStream.pipe(res);
+
+    readStream.on('end', () => {
+      console.log("File successfully sent, now deleting:", csvFilePath);
+      fs.unlink(csvFilePath, (err) => {
+        if (err) {
+          console.error(`Error deleting file ${csvFilePath}:`, err);
+        } else {
+          console.log(`File deleted: ${csvFilePath}`);
+        }
+      });
+    });
+
+    readStream.on('error', (err) => {
+      console.error("Error streaming file:", err);
+      res.status(500).send({ message: "Error sending file" });
+    });
+    
   } catch (error) {
-    console.error('Error downloading stock file:', error);
-    res.status(500).send({ message: 'Failed to download stock data' });
+    console.error('Error converting and downloading stock file:', error);
+    res.status(500).send({ message: 'Failed to download stock data as CSV' });
   }
-}
+};

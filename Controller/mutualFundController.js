@@ -1,6 +1,8 @@
 const { deleteFileFromS3 } = require("../Config/deleteFile");
 const { uploadToS3 } = require("../Config/fileUpload");
-const fs = require('fs');
+const fs = require("fs");
+const path = require("path");
+const { json2csv } = require("json-2-csv");
 const {
   deleteMutualFund,
   writeToCache,
@@ -9,8 +11,6 @@ const {
   updateMutualFund,
   getCacheFilePath,
 } = require("../Utils/fileOperations");
-const path = require("path");
-
 
 module.exports.mutualFundDetails = async (req, res) => {
   try {
@@ -61,12 +61,12 @@ module.exports.createMutualFund = async (req, res) => {
   try {
     const mutualFund = req.body;
     const mutualFundKey = process.env.MUTUAL_FUNDS_KEY;
-    
+
     let fileData = await getAllMutualFunds(mutualFundKey);
     if (typeof fileData === "string") {
-      fileData = JSON.parse(fileData); 
+      fileData = JSON.parse(fileData);
     }
-    fileData.push(mutualFund); 
+    fileData.push(mutualFund);
     writeToCache(JSON.stringify(fileData), "mutualFunds.json");
     // await deleteFileFromS3(mutualFundKey);
     // await uploadToS3(mutualFundKey, "mutualFunds.json");
@@ -75,7 +75,6 @@ module.exports.createMutualFund = async (req, res) => {
       success: true,
       fileData,
     });
-
   } catch (error) {
     console.error("Error while creating mutual fund:", error);
     return res.json({
@@ -85,34 +84,39 @@ module.exports.createMutualFund = async (req, res) => {
   }
 };
 
-module.exports.deleteMutualFundBySchemaName =async (req,res) => {
-  try{
-    const {name : scheme_name} = req.params;
+module.exports.deleteMutualFundBySchemaName = async (req, res) => {
+  try {
+    const { name: scheme_name } = req.params;
     const mutualFundKey = process.env.MUTUAL_FUNDS_KEY;
     const updatedData = await deleteMutualFund(scheme_name, mutualFundKey);
-    if(updatedData == null)  throw new Error(`Mutual Fund with ${scheme_name} is not found`)
+    if (updatedData == null)
+      throw new Error(`Mutual Fund with ${scheme_name} is not found`);
     await deleteFileFromS3(mutualFundKey);
     await uploadToS3(mutualFundKey, "mutualFunds.json");
     return res.json({
       success: true,
       updatedData,
     });
-  }catch(error){
+  } catch (error) {
     console.error("Error while Deleting a Mutual fund :", error);
     return res.json({
       success: false,
       message: "Failed to Delete the stock",
     });
   }
-}
+};
 
 module.exports.updateMutualFundBySchemaName = async (req, res) => {
   try {
     const { name: scheme_name } = req.params;
-    const updatedFields = req.body; 
+    const updatedFields = req.body;
     const mutualFundKey = process.env.MUTUAL_FUNDS_KEY;
 
-    const updatedData = await updateMutualFund(scheme_name, updatedFields, mutualFundKey);
+    const updatedData = await updateMutualFund(
+      scheme_name,
+      updatedFields,
+      mutualFundKey
+    );
 
     if (!updatedData) {
       return res.status(404).json({
@@ -142,35 +146,39 @@ module.exports.downloadMutualFund = async (req, res) => {
     const jsonFilePath = getCacheFilePath("mutualFunds.json");
 
     if (!jsonFilePath) {
-      return res.status(500).send({ message: 'Invalid file path' });
+      return res.status(500).send({ message: "Invalid file path" });
     }
 
     console.log("FILE PATH:", jsonFilePath);
 
-    // Checking if JSON file exists
     if (!fs.existsSync(jsonFilePath)) {
-      return res.status(404).send({ message: 'Mutual Fund file not found' });
+      return res.status(404).send({ message: "Mutual Fund file not found" });
     }
 
-    // Read and parse JSON file
-    let jsonData = fs.readFileSync(jsonFilePath, 'utf8');
+    let jsonData = fs.readFileSync(jsonFilePath, "utf8");
 
     try {
       jsonData = JSON.parse(jsonData);
-      if (typeof jsonData === 'string') {
-        jsonData = JSON.parse(jsonData); // Handle stringified JSON
+      if (typeof jsonData === "string") {
+        jsonData = JSON.parse(jsonData);
       }
     } catch (error) {
       console.error("Error parsing JSON file:", error);
-      return res.status(500).send({ message: 'Invalid JSON format in file' });
+      return res.status(500).send({ message: "Invalid JSON format in file" });
     }
+    console.log("Parsed JSON Data:", jsonData, Array.isArray(jsonData));
 
     if (!Array.isArray(jsonData) || jsonData.length === 0) {
-      return res.status(400).send({ message: 'No data found to convert to CSV' });
+      return res
+        .status(400)
+        .send({ message: "No data found to convert to CSV" });
     }
 
-    // Generate CSV file path
-    const csvFilePath = jsonFilePath.replace('.json', '.csv');
+    // Convert JSON to CSV
+    const csvContent = await json2csv(jsonData);
+    console.log("Generated CSV Content:", csvContent); // Debugging
+
+    const csvFilePath = jsonFilePath.replace(".json", ".csv");
 
     // Ensure the directory exists
     const directoryPath = path.dirname(csvFilePath);
@@ -178,37 +186,40 @@ module.exports.downloadMutualFund = async (req, res) => {
       fs.mkdirSync(directoryPath, { recursive: true });
     }
 
-    // Extract headers from the first object
-    const headers = Object.keys(jsonData[0]);
-    let csvContent = headers.join(',') + '\n';
+    fs.writeFileSync(csvFilePath, csvContent, "utf8");
+    console.log("CSV file path:", csvFilePath);
+    console.log("CSV file exists:", fs.existsSync(csvFilePath));
 
-    // Convert JSON to CSV format
-    jsonData.forEach(item => {
-      const row = headers.map(header => {
-        const value = item[header];
-        const cellValue = value === null || value === undefined ? '' : String(value);
-        
-        return cellValue.includes(',') || cellValue.includes('"') || cellValue.includes('\n') 
-          ? `"${cellValue.replace(/"/g, '""')}"` 
-          : cellValue;
+    // Set response headers before piping
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="mutualFunds.csv"'
+    );
+
+    // Stream the CSV file to the response
+    const readStream = fs.createReadStream(csvFilePath);
+    console.log("Streaming file:", csvFilePath);
+    readStream.pipe(res);
+    readStream.on("end", () => {
+      console.log("File successfully sent, now deleting:", csvFilePath);
+      fs.unlink(csvFilePath, (err) => {
+        if (err) {
+          console.error(`Error deleting file ${csvFilePath}:`, err);
+        } else {
+          console.log(`File deleted: ${csvFilePath}`);
+        }
       });
-
-      csvContent += row.join(',') + '\n';
     });
 
-    // Write CSV content to file
-    fs.writeFileSync(csvFilePath, csvContent, 'utf8');
-
-    // Send the CSV file
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=mutualFunds.csv');
-
-    const readStream = fs.createReadStream(csvFilePath);
-    readStream.pipe(res);
-
+    readStream.on("error", (err) => {
+      console.error("Error streaming file:", err);
+      res.status(500).send({ message: "Error sending file" });
+    });
   } catch (error) {
-    console.error('Error converting and downloading Mutual Fund file:', error);
-    res.status(500).send({ message: 'Failed to download Mutual Fund data as CSV' });
+    console.error("Error converting and downloading Mutual Fund file:", error);
+    res
+      .status(500)
+      .send({ message: "Failed to download Mutual Fund data as CSV" });
   }
-
-}
+};

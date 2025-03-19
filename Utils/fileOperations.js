@@ -196,6 +196,16 @@ const updateStockByTicker = async (ticker, updatedFields) => {
   }
 };
 
+const deleteFile = (filePath) => {
+  fs.unlink(filePath, (err) => {
+    if (err) {
+      console.error(`Error deleting file ${filePath}:`, err);
+    } else {
+      console.log(`File deleted: ${filePath}`);
+    }
+  });
+};
+
 module.exports = {
   updateStockByTicker,
   deleteStockByTicker,
@@ -206,5 +216,6 @@ module.exports = {
   getAllMutualFunds,
   deleteMutualFund,
   updateMutualFund,
-  getCacheFilePath
+  getCacheFilePath,
+  deleteFile
 };
