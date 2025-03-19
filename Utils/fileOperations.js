@@ -16,7 +16,6 @@ async function getAllStock() {
 
 const getAllMutualFunds = async (mutualFundKey) => {
   let fileData = readFromCache("mutualFunds.json");
-  console.log("File data : ", fileData);
   if (!fileData) {
     console.log("FILE DOES NOT EXIST IN STORAGE");
 
@@ -32,13 +31,13 @@ const getCacheFilePath = (fileName) =>
   path.join(__dirname, "../Cache", fileName);
 
 const readFromCache = (fileName) => {
-  console.log("FILE Name : ", fileName);
   const filePath = getCacheFilePath(fileName);
   if (fs.existsSync(filePath)) {
     return JSON.parse(fs.readFileSync(filePath, "utf-8")); // Read and parse the JSON file
   }
   return null; // If file doesn't exist, return null
 };
+
 const writeToCache = (data, fileName) => {
   try {
     const filePath = getCacheFilePath(fileName);
@@ -56,7 +55,9 @@ const writeToCache = (data, fileName) => {
 };
 
 function getFileDataByField(field, fileData, value) {
-  fileData = JSON.parse(fileData);
+  if (typeof fileData === "string") {
+    fileData = JSON.parse(fileData);
+  }
   // Ensure stocks is an array
   if (!Array.isArray(fileData)) {
     console.error("Stocks is not an array!");
@@ -121,10 +122,12 @@ const deleteMutualFund = async (schemeName, mutualFundKey) => {
       console.log(
         `Mutual Fund with scheme name ${schemeName} has been deleted.`
       );
-    } else {
-      console.log(`Mutual Fund with scheme name ${schemeName} not found.`);
+      return mutualFund;
     }
-    return mutualFund;
+    console.log(`Mutual Fund with scheme name ${schemeName} not found.`);
+    return null
+    
+    
   } catch (error) {
     console.error("Error deleting mutual fund:", error);
   }
@@ -203,4 +206,5 @@ module.exports = {
   getAllMutualFunds,
   deleteMutualFund,
   updateMutualFund,
+  getCacheFilePath
 };

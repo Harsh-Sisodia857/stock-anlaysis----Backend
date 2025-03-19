@@ -1,0 +1,3 @@
+{
+  "ignore": ["Cache\\stocks.json","Cache\\mutualFunds.json"]
+}
