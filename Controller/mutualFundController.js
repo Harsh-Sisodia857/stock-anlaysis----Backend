@@ -73,7 +73,7 @@ module.exports.createMutualFund = async (req, res) => {
 
     return res.json({
       success: true,
-      fileData,
+      updatedData : fileData,
     });
   } catch (error) {
     console.error("Error while creating mutual fund:", error);
@@ -176,7 +176,7 @@ module.exports.downloadMutualFund = async (req, res) => {
 
     // Convert JSON to CSV
     const csvContent = await json2csv(jsonData);
-    console.log("Generated CSV Content:", csvContent); // Debugging
+    console.log("Generated CSV Content:", csvContent); 
 
     const csvFilePath = jsonFilePath.replace(".json", ".csv");
 

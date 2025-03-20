@@ -95,6 +95,7 @@ module.exports.deleteStock = async (req,res) => {
     const {ticker} = req.params;
     let updatedData = await deleteStockByTicker(ticker);
     const stockKey = process.env.STOCK_KEY;
+    console.log("UPDATED DATA ; ", updatedData)
     await deleteFileFromS3(stockKey);
     await uploadToS3(stockKey,"stocks.json");
     return res.json({

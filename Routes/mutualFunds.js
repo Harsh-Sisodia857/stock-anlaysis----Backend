@@ -1,12 +1,13 @@
 const express = require("express");
 const { mutualFundDetails, getMutualFund, createMutualFund, deleteMutualFundBySchemaName, updateMutualFundBySchemaName, downloadMutualFund } = require("../Controller/mutualFundController");
+const { authenticated, authorizedRoles } = require("../Middleware/auth");
 const router = express.Router();
 
-router.get('/', mutualFundDetails);
-router.get('/download', downloadMutualFund)
-router.get('/:name',getMutualFund);
-router.post('/create',createMutualFund);
-router.delete('/delete/:name',deleteMutualFundBySchemaName)
-router.put('/update/:name',updateMutualFundBySchemaName)
+router.get('/',[authenticated], mutualFundDetails);
+router.get('/download',[authenticated], downloadMutualFund)
+router.get('/:name',[authenticated],getMutualFund);
+router.post('/create',[authenticated, authorizedRoles("admin")],createMutualFund);
+router.delete('/delete/:name',[authenticated, authorizedRoles("admin")],deleteMutualFundBySchemaName)
+router.put('/update/:name',[authenticated, authorizedRoles("admin")],updateMutualFundBySchemaName)
 
 module.exports = router;
