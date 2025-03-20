@@ -4,11 +4,17 @@ require('dotenv').config();
 const sequelize = require('./Config/connectToDb');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
-
+app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(express.json())
-app.use(cors());
+app.use(
+    cors({
+      origin: "http://localhost:3000", // Replace with actual frontend URL
+      credentials: true, // REQUIRED for sending cookies
+    })
+  );
 // Add authentication check
 sequelize.authenticate()
     .then(() => {

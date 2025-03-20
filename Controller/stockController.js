@@ -117,8 +117,8 @@ module.exports.updateStock = async(req,res) => {
     const stock = req.body;
     const updatedData = await updateStockByTicker(ticker, stock);
     // const stockKey = process.env.STOCK_KEY;
-    // await deleteFileFromS3(stockKey);
-    // await uploadToS3(stockKey,"stocks.json");
+    await deleteFileFromS3(stockKey);
+    await uploadToS3(stockKey,"stocks.json");
     return res.json({
       success: true,
       updatedData,
